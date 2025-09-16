@@ -1,7 +1,7 @@
 package database
 
 import (
-	"alumni-management-system/config"
+	"alumni-go/config"
 	"database/sql"
 	"fmt"
 	"log"

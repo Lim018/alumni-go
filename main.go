@@ -1,8 +1,9 @@
 package main
 
 import (
-	"alumni-management-system/config"
-	"alumni-management-system/database"
+	"alumni-go/app"
+	"alumni-go/config"
+	"alumni-go/database"
 	"log"
 )
 
@@ -12,12 +13,12 @@ func main() {
 	database.Connect()
 	defer database.DB.Close()
 
-	app := config.CreateApp()
+	webApp := app.CreateApp()
 
 	port := config.GetEnv("APP_PORT", "3000")
 	log.Printf("Server starting on port %s", port)
 	
-	if err := app.Listen(":" + port); err != nil {
+	if err := webApp.Listen(":" + port); err != nil {
 		log.Fatal("Failed to start server:", err)
 	}
 }

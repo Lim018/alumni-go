@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"alumni-management-system/helper"
+	"alumni-go/helper"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"

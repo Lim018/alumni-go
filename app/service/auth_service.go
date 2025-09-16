@@ -1,9 +1,9 @@
 package service
 
 import (
-	"alumni-management-system/app/model"
-	"alumni-management-system/app/repository"
-	"alumni-management-system/helper"
+	"alumni-go/app/model"
+	"alumni-go/app/repository"
+	"alumni-go/helper"
 	"errors"
 )
 

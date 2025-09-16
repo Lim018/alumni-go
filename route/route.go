@@ -1,7 +1,7 @@
 package route
 
 import (
-	"alumni-management-system/middleware"
+	"alumni-go/middleware"
 
 	"github.com/gofiber/fiber/v2"
 )

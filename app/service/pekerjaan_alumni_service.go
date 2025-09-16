@@ -1,8 +1,8 @@
 package service
 
 import (
-	"alumni-management-system/app/model"
-	"alumni-management-system/app/repository"
+	"alumni-go/app/model"
+	"alumni-go/app/repository"
 	"database/sql"
 	"errors"
 )
@@ -84,11 +84,36 @@ func (s *PekerjaanAlumniService) Create(data *model.PekerjaanCreate) (*model.Pek
 		return nil, errors.New("tanggal mulai kerja tidak boleh setelah tanggal selesai kerja")
 	}
 
-	pekerjaan, err := s.repo.Update(id, data)
+	// PERBAIKAN: Panggil fungsi Create dari repository
+	pekerjaan, err := s.repo.Create(data)
 	if err != nil {
+		// Jika ada error saat create, langsung kembalikan errornya
+		return nil, err
+	}
+
+	return pekerjaan, nil
+}
+
+func (s *PekerjaanAlumniService) Update(id int, data *model.PekerjaanUpdate) (*model.PekerjaanAlumni, error) {
+	// 1. Periksa dulu apakah data pekerjaan yang akan diupdate memang ada
+	_, err := s.repo.GetByID(id)
+	if err != nil {
+		// repo.GetByID sudah mengembalikan error jika tidak ditemukan, 
+		// tapi kita bisa bungkus dengan pesan yang lebih spesifik jika mau.
 		if err == sql.ErrNoRows {
 			return nil, errors.New("pekerjaan not found")
 		}
+		return nil, err
+	}
+
+	// 2. Validasi tanggal
+	if data.TanggalSelesaiKerja != nil && data.TanggalMulaiKerja.After(*data.TanggalSelesaiKerja) {
+		return nil, errors.New("tanggal mulai kerja tidak boleh setelah tanggal selesai kerja")
+	}
+
+	// 3. Panggil repository untuk melakukan update ke database
+	pekerjaan, err := s.repo.Update(id, data)
+	if err != nil {
 		return nil, err
 	}
 

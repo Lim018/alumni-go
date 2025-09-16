@@ -1,11 +1,10 @@
 package repository
 
 import (
-	"alumni-management-system/app/model"
-	"alumni-management-system/database"
+	"alumni-go/app/model"
+	"alumni-go/database"
 	"database/sql"
 	"fmt"
-	"strings"
 )
 
 type AlumniRepository struct{}

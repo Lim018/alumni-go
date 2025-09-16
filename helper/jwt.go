@@ -1,7 +1,7 @@
 package helper
 
 import (
-	"alumni-management-system/config"
+	"alumni-go/config"
 	"errors"
 	"time"
 

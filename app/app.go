@@ -1,7 +1,8 @@
-package config
+package app
 
 import (
-	"alumni-management-system/route"
+	"alumni-go/config"
+	"alumni-go/route"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -14,7 +15,7 @@ func CreateApp() *fiber.App {
 	SetupLogger()
 
 	app := fiber.New(fiber.Config{
-		AppName: GetEnv("APP_NAME", "Alumni Management System"),
+		AppName: config.GetEnv("APP_NAME", "Alumni Management System"),
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			code := fiber.StatusInternalServerError
 			if e, ok := err.(*fiber.Error); ok {

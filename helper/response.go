@@ -1,7 +1,7 @@
 package helper
 
 import (
-	"alumni-management-system/app/model"
+	"alumni-go/app/model"
 
 	"github.com/gofiber/fiber/v2"
 )

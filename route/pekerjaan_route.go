@@ -1,9 +1,9 @@
 package route
 
 import (
-	"alumni-management-system/app/model"
-	"alumni-management-system/app/service"
-	"alumni-management-system/helper"
+	"alumni-go/app/model"
+	"alumni-go/app/service"
+	"alumni-go/helper"
 	"strconv"
 	"time"
 
