@@ -5,6 +5,7 @@ import (
 	"alumni-go/database"
 	"database/sql"
 	"fmt"
+	"strings"
 )
 
 type AlumniRepository struct{}
@@ -13,56 +14,56 @@ func NewAlumniRepository() *AlumniRepository {
 	return &AlumniRepository{}
 }
 
-func (r *AlumniRepository) GetAll(page, perPage int, search string) ([]model.Alumni, int64, error) {
-	offset := (page - 1) * perPage
+// func (r *AlumniRepository) GetAll(page, perPage int, search string) ([]model.Alumni, int64, error) {
+// 	offset := (page - 1) * perPage
 	
-	whereClause := ""
-	args := []interface{}{}
-	argIndex := 1
+// 	whereClause := ""
+// 	args := []interface{}{}
+// 	argIndex := 1
 
-	if search != "" {
-		whereClause = "WHERE LOWER(nama) LIKE LOWER($" + fmt.Sprintf("%d", argIndex) + ") OR LOWER(nim) LIKE LOWER($" + fmt.Sprintf("%d", argIndex+1) + ")"
-		args = append(args, "%"+search+"%", "%"+search+"%")
-		argIndex += 2
-	}
+// 	if search != "" {
+// 		whereClause = "WHERE LOWER(nama) LIKE LOWER($" + fmt.Sprintf("%d", argIndex) + ") OR LOWER(nim) LIKE LOWER($" + fmt.Sprintf("%d", argIndex+1) + ")"
+// 		args = append(args, "%"+search+"%", "%"+search+"%")
+// 		argIndex += 2
+// 	}
 
-	// Count total records
-	countQuery := "SELECT COUNT(*) FROM alumni " + whereClause
-	var total int64
-	err := database.DB.QueryRow(countQuery, args...).Scan(&total)
-	if err != nil {
-		return nil, 0, err
-	}
+// 	// Count total records
+// 	countQuery := "SELECT COUNT(*) FROM alumni " + whereClause
+// 	var total int64
+// 	err := database.DB.QueryRow(countQuery, args...).Scan(&total)
+// 	if err != nil {
+// 		return nil, 0, err
+// 	}
 
-	// Get paginated data
-	query := fmt.Sprintf(`
-		SELECT id, nim, nama, jurusan, angkatan, tahun_lulus, email, no_telepon, alamat, created_at, updated_at
-		FROM alumni %s
-		ORDER BY created_at DESC
-		LIMIT $%d OFFSET $%d
-	`, whereClause, argIndex, argIndex+1)
+// 	// Get paginated data
+// 	query := fmt.Sprintf(`
+// 		SELECT id, nim, nama, jurusan, angkatan, tahun_lulus, email, no_telepon, alamat, created_at, updated_at
+// 		FROM alumni %s
+// 		ORDER BY created_at DESC
+// 		LIMIT $%d OFFSET $%d
+// 	`, whereClause, argIndex, argIndex+1)
 	
-	args = append(args, perPage, offset)
+// 	args = append(args, perPage, offset)
 	
-	rows, err := database.DB.Query(query, args...)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer rows.Close()
+// 	rows, err := database.DB.Query(query, args...)
+// 	if err != nil {
+// 		return nil, 0, err
+// 	}
+// 	defer rows.Close()
 
-	var alumni []model.Alumni
-	for rows.Next() {
-		var a model.Alumni
-		err := rows.Scan(&a.ID, &a.NIM, &a.Nama, &a.Jurusan, &a.Angkatan, &a.TahunLulus,
-			&a.Email, &a.NoTelepon, &a.Alamat, &a.CreatedAt, &a.UpdatedAt)
-		if err != nil {
-			return nil, 0, err
-		}
-		alumni = append(alumni, a)
-	}
+// 	var alumni []model.Alumni
+// 	for rows.Next() {
+// 		var a model.Alumni
+// 		err := rows.Scan(&a.ID, &a.NIM, &a.Nama, &a.Jurusan, &a.Angkatan, &a.TahunLulus,
+// 			&a.Email, &a.NoTelepon, &a.Alamat, &a.CreatedAt, &a.UpdatedAt)
+// 		if err != nil {
+// 			return nil, 0, err
+// 		}
+// 		alumni = append(alumni, a)
+// 	}
 
-	return alumni, total, nil
-}
+// 	return alumni, total, nil
+// }
 
 func (r *AlumniRepository) GetByID(id int) (*model.Alumni, error) {
 	query := `
@@ -177,4 +178,85 @@ func (r *AlumniRepository) CheckEmailExists(email string, excludeID ...int) (boo
 	var exists bool
 	err := database.DB.QueryRow(query, args...).Scan(&exists)
 	return exists, err
+}
+
+func (r *AlumniRepository) GetAlumniBaruBekerja() ([]model.AlumniPekerjaanSingkat, error) {
+	query := `
+		SELECT
+			a.nama,
+			a.jurusan,
+			a.tahun_lulus,
+			p.bidang_industri
+		FROM
+			alumni a
+		JOIN
+			pekerjaan_alumni p ON a.id = p.alumni_id
+		WHERE
+			p.status_pekerjaan = 'aktif' AND AGE(NOW(), p.tanggal_mulai_kerja) < '3 years'
+		ORDER BY
+			a.nama ASC
+	`
+
+	rows, err := database.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []model.AlumniPekerjaanSingkat
+	for rows.Next() {
+		var res model.AlumniPekerjaanSingkat
+		err := rows.Scan(&res.Nama, &res.Jurusan, &res.TahunLulus, &res.BidangIndustri)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, res)
+	}
+
+	return results, nil
+}
+
+func (r *AlumniRepository) GetAll(page, perPage int, search, sortBy, order string) ([]model.Alumni, error) {
+	offset := (page - 1) * perPage
+	
+	// Query utama untuk mengambil data
+	query := fmt.Sprintf(`
+		SELECT id, nim, nama, jurusan, angkatan, tahun_lulus, email, no_telepon, alamat, created_at, updated_at
+		FROM alumni
+		WHERE LOWER(nama) LIKE $1 OR LOWER(nim) LIKE $1 OR LOWER(jurusan) LIKE $1
+		ORDER BY %s %s
+		LIMIT $2 OFFSET $3
+	`, sortBy, order)
+	
+	rows, err := database.DB.Query(query, "%"+strings.ToLower(search)+"%", perPage, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var alumni []model.Alumni
+	for rows.Next() {
+		var a model.Alumni
+		err := rows.Scan(&a.ID, &a.NIM, &a.Nama, &a.Jurusan, &a.Angkatan, &a.TahunLulus,
+			&a.Email, &a.NoTelepon, &a.Alamat, &a.CreatedAt, &a.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		alumni = append(alumni, a)
+	}
+
+	return alumni, nil
+}
+
+func (r *AlumniRepository) CountAll(search string) (int64, error) {
+	var total int64
+	// Query untuk menghitung total data yang cocok dengan pencarian
+	countQuery := `SELECT COUNT(*) FROM alumni WHERE LOWER(nama) LIKE $1 OR LOWER(nim) LIKE $1 OR LOWER(jurusan) LIKE $1`
+	
+	err := database.DB.QueryRow(countQuery, "%"+strings.ToLower(search)+"%").Scan(&total)
+	if err != nil {
+		return 0, err
+	}
+	
+	return total, nil
 }

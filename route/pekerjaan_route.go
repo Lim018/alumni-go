@@ -20,18 +20,18 @@ func NewPekerjaanHandler() *PekerjaanHandler {
 	}
 }
 
-func (h *PekerjaanHandler) GetAll(c *fiber.Ctx) error {
-	page, _ := strconv.Atoi(c.Query("page", "1"))
-	perPage, _ := strconv.Atoi(c.Query("per_page", "10"))
-	search := c.Query("search", "")
+// func (h *PekerjaanHandler) GetAll(c *fiber.Ctx) error {
+// 	page, _ := strconv.Atoi(c.Query("page", "1"))
+// 	perPage, _ := strconv.Atoi(c.Query("per_page", "10"))
+// 	search := c.Query("search", "")
 
-	pekerjaan, meta, err := h.pekerjaanService.GetAll(page, perPage, search)
-	if err != nil {
-		return helper.ErrorResponse(c, fiber.StatusInternalServerError, err.Error())
-	}
+// 	pekerjaan, meta, err := h.pekerjaanService.GetAll(page, perPage, search)
+// 	if err != nil {
+// 		return helper.ErrorResponse(c, fiber.StatusInternalServerError, err.Error())
+// 	}
 
-	return helper.PaginatedSuccessResponse(c, "Pekerjaan retrieved successfully", pekerjaan, meta)
-}
+// 	return helper.PaginatedSuccessResponse(c, "Pekerjaan retrieved successfully", pekerjaan, meta)
+// }
 
 func (h *PekerjaanHandler) GetByID(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
@@ -160,4 +160,13 @@ func (h *PekerjaanHandler) Delete(c *fiber.Ctx) error {
 	}
 
 	return helper.SuccessResponse(c, "Pekerjaan deleted successfully", nil)
+}
+
+func (h *PekerjaanHandler) GetAll(c *fiber.Ctx) error {
+	response, err := h.pekerjaanService.GetAll(c)
+	if err != nil {
+		return helper.ErrorResponse(c, fiber.StatusInternalServerError, err.Error())
+	}
+
+	return c.Status(fiber.StatusOK).JSON(response)
 }

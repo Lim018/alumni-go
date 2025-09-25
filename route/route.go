@@ -32,6 +32,8 @@ func RegisterRoutes(app *fiber.App) {
 	alumni.Put("/:id", middleware.AdminOnly(), alumniHandler.Update)         // Admin only
 	alumni.Delete("/:id", middleware.AdminOnly(), alumniHandler.Delete)      // Admin only
 
+	alumni.Get("/laporan/baru-bekerja", middleware.AdminOrUser(), alumniHandler.GetAlumniBaruBekerja)
+
 	// Pekerjaan routes
 	pekerjaan := protected.Group("/pekerjaan")
 	pekerjaan.Get("/", middleware.AdminOrUser(), pekerjaanHandler.GetAll)                    // Admin + User

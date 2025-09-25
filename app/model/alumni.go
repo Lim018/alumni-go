@@ -36,3 +36,10 @@ type AlumniUpdate struct {
 	NoTelepon  *string `json:"no_telepon" validate:"omitempty,max=15"`
 	Alamat     *string `json:"alamat"`
 }
+
+type AlumniPekerjaanSingkat struct {
+	Nama           string `json:"nama"`
+	Jurusan        string `json:"jurusan"`
+	TahunLulus     int    `json:"tahun_lulus"`
+	BidangIndustri string `json:"bidang_industri"`
+}

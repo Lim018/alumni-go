@@ -19,18 +19,18 @@ func NewAlumniHandler() *AlumniHandler {
 	}
 }
 
-func (h *AlumniHandler) GetAll(c *fiber.Ctx) error {
-	page, _ := strconv.Atoi(c.Query("page", "1"))
-	perPage, _ := strconv.Atoi(c.Query("per_page", "10"))
-	search := c.Query("search", "")
+// func (h *AlumniHandler) GetAll(c *fiber.Ctx) error {
+// 	page, _ := strconv.Atoi(c.Query("page", "1"))
+// 	perPage, _ := strconv.Atoi(c.Query("per_page", "10"))
+// 	search := c.Query("search", "")
 
-	alumni, meta, err := h.alumniService.GetAll(page, perPage, search)
-	if err != nil {
-		return helper.ErrorResponse(c, fiber.StatusInternalServerError, err.Error())
-	}
+// 	alumni, meta, err := h.alumniService.GetAll(page, perPage, search)
+// 	if err != nil {
+// 		return helper.ErrorResponse(c, fiber.StatusInternalServerError, err.Error())
+// 	}
 
-	return helper.PaginatedSuccessResponse(c, "Alumni retrieved successfully", alumni, meta)
-}
+// 	return helper.PaginatedSuccessResponse(c, "Alumni retrieved successfully", alumni, meta)
+// }
 
 func (h *AlumniHandler) GetByID(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
@@ -119,4 +119,23 @@ func (h *AlumniHandler) Delete(c *fiber.Ctx) error {
 	}
 
 	return helper.SuccessResponse(c, "Alumni deleted successfully", nil)
+}
+
+func (h *AlumniHandler) GetAlumniBaruBekerja(c *fiber.Ctx) error {
+	data, err := h.alumniService.GetAlumniBaruBekerja()
+	if err != nil {
+		return helper.ErrorResponse(c, fiber.StatusInternalServerError, err.Error())
+	}
+
+	return helper.SuccessResponse(c, "Successfully retrieved alumni working less than 3 years", data)
+}
+
+func (h *AlumniHandler) GetAll(c *fiber.Ctx) error {
+	response, err := h.alumniService.GetAll(c)
+	if err != nil {
+		return helper.ErrorResponse(c, fiber.StatusInternalServerError, err.Error())
+	}
+	
+	// Karena service sudah mengembalikan struct response lengkap, kita tinggal kirim
+	return c.Status(fiber.StatusOK).JSON(response)
 }

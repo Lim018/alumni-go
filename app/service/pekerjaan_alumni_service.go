@@ -5,6 +5,10 @@ import (
 	"alumni-go/app/repository"
 	"database/sql"
 	"errors"
+	"strconv"
+	"strings"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 type PekerjaanAlumniService struct {
@@ -19,31 +23,31 @@ func NewPekerjaanAlumniService() *PekerjaanAlumniService {
 	}
 }
 
-func (s *PekerjaanAlumniService) GetAll(page, perPage int, search string) ([]model.PekerjaanAlumniWithAlumni, model.MetaData, error) {
-	if page < 1 {
-		page = 1
-	}
-	if perPage < 1 {
-		perPage = 10
-	}
-	if perPage > 100 {
-		perPage = 100
-	}
+// func (s *PekerjaanAlumniService) GetAll(page, perPage int, search string) ([]model.PekerjaanAlumniWithAlumni, model.MetaData, error) {
+// 	if page < 1 {
+// 		page = 1
+// 	}
+// 	if perPage < 1 {
+// 		perPage = 10
+// 	}
+// 	if perPage > 100 {
+// 		perPage = 100
+// 	}
 
-	pekerjaan, total, err := s.repo.GetAll(page, perPage, search)
-	if err != nil {
-		return nil, model.MetaData{}, err
-	}
+// 	pekerjaan, total, err := s.repo.GetAll(page, perPage, search)
+// 	if err != nil {
+// 		return nil, model.MetaData{}, err
+// 	}
 
-	meta := model.MetaData{
-		Page:       page,
-		PerPage:    perPage,
-		Total:      total,
-		TotalPages: (int(total) + perPage - 1) / perPage,
-	}
+// 	meta := model.MetaData{
+// 		Page:       page,
+// 		PerPage:    perPage,
+// 		Total:      total,
+// 		TotalPages: (int(total) + perPage - 1) / perPage,
+// 	}
 
-	return pekerjaan, meta, nil
-}
+// 	return pekerjaan, meta, nil
+// }
 
 func (s *PekerjaanAlumniService) GetByID(id int) (*model.PekerjaanAlumniWithAlumni, error) {
 	pekerjaan, err := s.repo.GetByID(id)
@@ -136,4 +140,51 @@ func (s *PekerjaanAlumniService) Delete(id int) error {
 	}
 
 	return nil
+}
+
+func (s *PekerjaanAlumniService) GetAll(c *fiber.Ctx) (*model.PaginatedResponse, error) {
+	// 1. Ekstrak parameter
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	perPage, _ := strconv.Atoi(c.Query("per_page", "10"))
+	search := c.Query("search", "")
+	sortBy := c.Query("sortBy", "id")
+	order := c.Query("order", "asc")
+
+	// 2. Validasi
+	sortByWhitelist := map[string]bool{"id": true, "nama_perusahaan": true, "posisi_jabatan": true, "tanggal_mulai_kerja": true}
+	if !sortByWhitelist[sortBy] {
+		sortBy = "id"
+	}
+	if strings.ToLower(order) != "desc" {
+		order = "asc"
+	}
+
+	// 3. Panggil Repository
+	pekerjaan, err := s.repo.GetAll(page, perPage, search, sortBy, order)
+	if err != nil {
+		return nil, err
+	}
+	
+	total, err := s.repo.CountAll(search)
+	if err != nil {
+		return nil, err
+	}
+
+	// 4. Buat Response
+	totalPages := (total + int64(perPage) - 1) / int64(perPage)
+	meta := model.MetaData{
+		Page:       page,
+		PerPage:    perPage,
+		Total:      total,
+		TotalPages: int(totalPages),
+	}
+	
+	response := &model.PaginatedResponse{
+		Success: true,
+		Message: "Pekerjaan retrieved successfully",
+		Data: pekerjaan,
+		Meta: meta,
+	}
+
+	return response, nil
 }
