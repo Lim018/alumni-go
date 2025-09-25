@@ -1,7 +1,7 @@
 package helper
 
 import (
-	"alumni-go/config"
+	// "alumni-go/config" // Dihapus untuk memutus import cycle
 	"errors"
 	"time"
 
@@ -15,8 +15,9 @@ type JWTClaims struct {
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(userID int, username, role string) (string, error) {
-	secret := config.GetEnv("JWT_SECRET", "your-secret-key")
+// Perubahan: Tambahkan parameter secretKey string
+func GenerateToken(userID int, username, role, secretKey string) (string, error) {
+	// secret := config.GetEnv("JWT_SECRET", "your-secret-key") // Baris ini dihapus
 	expireHours := 24 // Default 24 hours
 
 	claims := &JWTClaims{
@@ -30,17 +31,20 @@ func GenerateToken(userID int, username, role string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(secret))
+	// Gunakan secretKey dari parameter
+	return token.SignedString([]byte(secretKey))
 }
 
-func ValidateToken(tokenString string) (*JWTClaims, error) {
-	secret := config.GetEnv("JWT_SECRET", "your-secret-key")
+// Perubahan: Tambahkan parameter secretKey string
+func ValidateToken(tokenString, secretKey string) (*JWTClaims, error) {
+	// secret := config.GetEnv("JWT_SECRET", "your-secret-key") // Baris ini dihapus
 
 	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
-		return []byte(secret), nil
+		// Gunakan secretKey dari parameter
+		return []byte(secretKey), nil
 	})
 
 	if err != nil {

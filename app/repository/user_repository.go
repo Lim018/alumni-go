@@ -2,14 +2,15 @@ package repository
 
 import (
 	"alumni-go/app/model"
-	"alumni-go/database"
 	"database/sql"
 )
 
-type UserRepository struct{}
+type UserRepository struct {
+	db *sql.DB
+}
 
-func NewUserRepository() *UserRepository {
-	return &UserRepository{}
+func NewUserRepository(db *sql.DB) *UserRepository {
+	return &UserRepository{db: db}
 }
 
 func (r *UserRepository) GetByUsername(username string) (*model.User, error) {
@@ -19,7 +20,7 @@ func (r *UserRepository) GetByUsername(username string) (*model.User, error) {
 	`
 	
 	var u model.User
-	err := database.DB.QueryRow(query, username).Scan(&u.ID, &u.Username, &u.Password, &u.Role, &u.CreatedAt, &u.UpdatedAt)
+	err := r.db.QueryRow(query, username).Scan(&u.ID, &u.Username, &u.Password, &u.Role, &u.CreatedAt, &u.UpdatedAt)
 	
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -38,7 +39,7 @@ func (r *UserRepository) GetByID(id int) (*model.User, error) {
 	`
 	
 	var u model.User
-	err := database.DB.QueryRow(query, id).Scan(&u.ID, &u.Username, &u.Password, &u.Role, &u.CreatedAt, &u.UpdatedAt)
+	err := r.db.QueryRow(query, id).Scan(&u.ID, &u.Username, &u.Password, &u.Role, &u.CreatedAt, &u.UpdatedAt)
 	
 	if err != nil {
 		if err == sql.ErrNoRows {

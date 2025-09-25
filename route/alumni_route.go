@@ -4,6 +4,7 @@ import (
 	"alumni-go/app/model"
 	"alumni-go/app/service"
 	"alumni-go/helper"
+	"database/sql"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -13,24 +14,21 @@ type AlumniHandler struct {
 	alumniService *service.AlumniService
 }
 
-func NewAlumniHandler() *AlumniHandler {
+// NewAlumniHandler sekarang menerima *sql.DB
+func NewAlumniHandler(db *sql.DB) *AlumniHandler {
 	return &AlumniHandler{
-		alumniService: service.NewAlumniService(),
+		alumniService: service.NewAlumniService(db),
 	}
 }
 
-// func (h *AlumniHandler) GetAll(c *fiber.Ctx) error {
-// 	page, _ := strconv.Atoi(c.Query("page", "1"))
-// 	perPage, _ := strconv.Atoi(c.Query("per_page", "10"))
-// 	search := c.Query("search", "")
-
-// 	alumni, meta, err := h.alumniService.GetAll(page, perPage, search)
-// 	if err != nil {
-// 		return helper.ErrorResponse(c, fiber.StatusInternalServerError, err.Error())
-// 	}
-
-// 	return helper.PaginatedSuccessResponse(c, "Alumni retrieved successfully", alumni, meta)
-// }
+func (h *AlumniHandler) GetAll(c *fiber.Ctx) error {
+	response, err := h.alumniService.GetAll(c)
+	if err != nil {
+		return helper.ErrorResponse(c, fiber.StatusInternalServerError, err.Error())
+	}
+	
+	return c.Status(fiber.StatusOK).JSON(response)
+}
 
 func (h *AlumniHandler) GetByID(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
@@ -50,11 +48,6 @@ func (h *AlumniHandler) Create(c *fiber.Ctx) error {
 	var data model.AlumniCreate
 	if err := c.BodyParser(&data); err != nil {
 		return helper.ErrorResponse(c, fiber.StatusBadRequest, "Invalid request body")
-	}
-
-	// Basic validation
-	if data.NIM == "" || data.Nama == "" || data.Email == "" {
-		return helper.ErrorResponse(c, fiber.StatusBadRequest, "NIM, nama, and email are required")
 	}
 
 	alumni, err := h.alumniService.Create(&data)
@@ -80,11 +73,6 @@ func (h *AlumniHandler) Update(c *fiber.Ctx) error {
 	var data model.AlumniUpdate
 	if err := c.BodyParser(&data); err != nil {
 		return helper.ErrorResponse(c, fiber.StatusBadRequest, "Invalid request body")
-	}
-
-	// Basic validation
-	if data.Nama == "" || data.Email == "" {
-		return helper.ErrorResponse(c, fiber.StatusBadRequest, "Nama and email are required")
 	}
 
 	alumni, err := h.alumniService.Update(id, &data)
@@ -128,14 +116,4 @@ func (h *AlumniHandler) GetAlumniBaruBekerja(c *fiber.Ctx) error {
 	}
 
 	return helper.SuccessResponse(c, "Successfully retrieved alumni working less than 3 years", data)
-}
-
-func (h *AlumniHandler) GetAll(c *fiber.Ctx) error {
-	response, err := h.alumniService.GetAll(c)
-	if err != nil {
-		return helper.ErrorResponse(c, fiber.StatusInternalServerError, err.Error())
-	}
-	
-	// Karena service sudah mengembalikan struct response lengkap, kita tinggal kirim
-	return c.Status(fiber.StatusOK).JSON(response)
 }

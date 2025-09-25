@@ -4,6 +4,7 @@ import (
 	"alumni-go/app/model"
 	"alumni-go/app/service"
 	"alumni-go/helper"
+	"database/sql"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -12,9 +13,11 @@ type AuthHandler struct {
 	authService *service.AuthService
 }
 
-func NewAuthHandler() *AuthHandler {
+// NewAuthHandler sekarang menerima db dan jwtSecret
+func NewAuthHandler(db *sql.DB, jwtSecret string) *AuthHandler {
 	return &AuthHandler{
-		authService: service.NewAuthService(),
+		// Teruskan kedua dependensi saat membuat service
+		authService: service.NewAuthService(db, jwtSecret),
 	}
 }
 
@@ -22,11 +25,6 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	var req model.LoginRequest
 	if err := c.BodyParser(&req); err != nil {
 		return helper.ErrorResponse(c, fiber.StatusBadRequest, "Invalid request body")
-	}
-
-	// Basic validation
-	if req.Username == "" || req.Password == "" {
-		return helper.ErrorResponse(c, fiber.StatusBadRequest, "Username and password are required")
 	}
 
 	response, err := h.authService.Login(&req)

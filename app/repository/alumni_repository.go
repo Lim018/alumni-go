@@ -2,68 +2,18 @@ package repository
 
 import (
 	"alumni-go/app/model"
-	"alumni-go/database"
 	"database/sql"
 	"fmt"
 	"strings"
 )
 
-type AlumniRepository struct{}
-
-func NewAlumniRepository() *AlumniRepository {
-	return &AlumniRepository{}
+type AlumniRepository struct {
+	db *sql.DB
 }
 
-// func (r *AlumniRepository) GetAll(page, perPage int, search string) ([]model.Alumni, int64, error) {
-// 	offset := (page - 1) * perPage
-	
-// 	whereClause := ""
-// 	args := []interface{}{}
-// 	argIndex := 1
-
-// 	if search != "" {
-// 		whereClause = "WHERE LOWER(nama) LIKE LOWER($" + fmt.Sprintf("%d", argIndex) + ") OR LOWER(nim) LIKE LOWER($" + fmt.Sprintf("%d", argIndex+1) + ")"
-// 		args = append(args, "%"+search+"%", "%"+search+"%")
-// 		argIndex += 2
-// 	}
-
-// 	// Count total records
-// 	countQuery := "SELECT COUNT(*) FROM alumni " + whereClause
-// 	var total int64
-// 	err := database.DB.QueryRow(countQuery, args...).Scan(&total)
-// 	if err != nil {
-// 		return nil, 0, err
-// 	}
-
-// 	// Get paginated data
-// 	query := fmt.Sprintf(`
-// 		SELECT id, nim, nama, jurusan, angkatan, tahun_lulus, email, no_telepon, alamat, created_at, updated_at
-// 		FROM alumni %s
-// 		ORDER BY created_at DESC
-// 		LIMIT $%d OFFSET $%d
-// 	`, whereClause, argIndex, argIndex+1)
-	
-// 	args = append(args, perPage, offset)
-	
-// 	rows, err := database.DB.Query(query, args...)
-// 	if err != nil {
-// 		return nil, 0, err
-// 	}
-// 	defer rows.Close()
-
-// 	var alumni []model.Alumni
-// 	for rows.Next() {
-// 		var a model.Alumni
-// 		err := rows.Scan(&a.ID, &a.NIM, &a.Nama, &a.Jurusan, &a.Angkatan, &a.TahunLulus,
-// 			&a.Email, &a.NoTelepon, &a.Alamat, &a.CreatedAt, &a.UpdatedAt)
-// 		if err != nil {
-// 			return nil, 0, err
-// 		}
-// 		alumni = append(alumni, a)
-// 	}
-
-// 	return alumni, total, nil
-// }
+func NewAlumniRepository(db *sql.DB) *AlumniRepository {
+	return &AlumniRepository{db: db}
+}
 
 func (r *AlumniRepository) GetByID(id int) (*model.Alumni, error) {
 	query := `
@@ -72,7 +22,7 @@ func (r *AlumniRepository) GetByID(id int) (*model.Alumni, error) {
 	`
 	
 	var a model.Alumni
-	err := database.DB.QueryRow(query, id).Scan(&a.ID, &a.NIM, &a.Nama, &a.Jurusan, &a.Angkatan,
+	err := r.db.QueryRow(query, id).Scan(&a.ID, &a.NIM, &a.Nama, &a.Jurusan, &a.Angkatan,
 		&a.TahunLulus, &a.Email, &a.NoTelepon, &a.Alamat, &a.CreatedAt, &a.UpdatedAt)
 	
 	if err != nil {
@@ -93,7 +43,7 @@ func (r *AlumniRepository) Create(alumni *model.AlumniCreate) (*model.Alumni, er
 	`
 	
 	var a model.Alumni
-	err := database.DB.QueryRow(query, alumni.NIM, alumni.Nama, alumni.Jurusan, alumni.Angkatan,
+	err := r.db.QueryRow(query, alumni.NIM, alumni.Nama, alumni.Jurusan, alumni.Angkatan,
 		alumni.TahunLulus, alumni.Email, alumni.NoTelepon, alumni.Alamat).Scan(
 		&a.ID, &a.NIM, &a.Nama, &a.Jurusan, &a.Angkatan, &a.TahunLulus,
 		&a.Email, &a.NoTelepon, &a.Alamat, &a.CreatedAt, &a.UpdatedAt)
@@ -114,7 +64,7 @@ func (r *AlumniRepository) Update(id int, alumni *model.AlumniUpdate) (*model.Al
 	`
 	
 	var a model.Alumni
-	err := database.DB.QueryRow(query, id, alumni.Nama, alumni.Jurusan, alumni.Angkatan,
+	err := r.db.QueryRow(query, id, alumni.Nama, alumni.Jurusan, alumni.Angkatan,
 		alumni.TahunLulus, alumni.Email, alumni.NoTelepon, alumni.Alamat).Scan(
 		&a.ID, &a.NIM, &a.Nama, &a.Jurusan, &a.Angkatan, &a.TahunLulus,
 		&a.Email, &a.NoTelepon, &a.Alamat, &a.CreatedAt, &a.UpdatedAt)
@@ -131,7 +81,7 @@ func (r *AlumniRepository) Update(id int, alumni *model.AlumniUpdate) (*model.Al
 
 func (r *AlumniRepository) Delete(id int) error {
 	query := "DELETE FROM alumni WHERE id = $1"
-	result, err := database.DB.Exec(query, id)
+	result, err := r.db.Exec(query, id)
 	if err != nil {
 		return err
 	}
@@ -160,7 +110,7 @@ func (r *AlumniRepository) CheckNIMExists(nim string, excludeID ...int) (bool, e
 	query += ")"
 	
 	var exists bool
-	err := database.DB.QueryRow(query, args...).Scan(&exists)
+	err := r.db.QueryRow(query, args...).Scan(&exists)
 	return exists, err
 }
 
@@ -176,7 +126,7 @@ func (r *AlumniRepository) CheckEmailExists(email string, excludeID ...int) (boo
 	query += ")"
 	
 	var exists bool
-	err := database.DB.QueryRow(query, args...).Scan(&exists)
+	err := r.db.QueryRow(query, args...).Scan(&exists)
 	return exists, err
 }
 
@@ -197,7 +147,7 @@ func (r *AlumniRepository) GetAlumniBaruBekerja() ([]model.AlumniPekerjaanSingka
 			a.nama ASC
 	`
 
-	rows, err := database.DB.Query(query)
+	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +169,6 @@ func (r *AlumniRepository) GetAlumniBaruBekerja() ([]model.AlumniPekerjaanSingka
 func (r *AlumniRepository) GetAll(page, perPage int, search, sortBy, order string) ([]model.Alumni, error) {
 	offset := (page - 1) * perPage
 	
-	// Query utama untuk mengambil data
 	query := fmt.Sprintf(`
 		SELECT id, nim, nama, jurusan, angkatan, tahun_lulus, email, no_telepon, alamat, created_at, updated_at
 		FROM alumni
@@ -228,7 +177,7 @@ func (r *AlumniRepository) GetAll(page, perPage int, search, sortBy, order strin
 		LIMIT $2 OFFSET $3
 	`, sortBy, order)
 	
-	rows, err := database.DB.Query(query, "%"+strings.ToLower(search)+"%", perPage, offset)
+	rows, err := r.db.Query(query, "%"+strings.ToLower(search)+"%", perPage, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -250,10 +199,9 @@ func (r *AlumniRepository) GetAll(page, perPage int, search, sortBy, order strin
 
 func (r *AlumniRepository) CountAll(search string) (int64, error) {
 	var total int64
-	// Query untuk menghitung total data yang cocok dengan pencarian
 	countQuery := `SELECT COUNT(*) FROM alumni WHERE LOWER(nama) LIKE $1 OR LOWER(nim) LIKE $1 OR LOWER(jurusan) LIKE $1`
 	
-	err := database.DB.QueryRow(countQuery, "%"+strings.ToLower(search)+"%").Scan(&total)
+	err := r.db.QueryRow(countQuery, "%"+strings.ToLower(search)+"%").Scan(&total)
 	if err != nil {
 		return 0, err
 	}

@@ -4,8 +4,8 @@ import (
 	"alumni-go/app/model"
 	"alumni-go/app/service"
 	"alumni-go/helper"
+	"database/sql"
 	"strconv"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -14,24 +14,21 @@ type PekerjaanHandler struct {
 	pekerjaanService *service.PekerjaanAlumniService
 }
 
-func NewPekerjaanHandler() *PekerjaanHandler {
+// NewPekerjaanHandler sekarang menerima *sql.DB
+func NewPekerjaanHandler(db *sql.DB) *PekerjaanHandler {
 	return &PekerjaanHandler{
-		pekerjaanService: service.NewPekerjaanAlumniService(),
+		pekerjaanService: service.NewPekerjaanAlumniService(db),
 	}
 }
 
-// func (h *PekerjaanHandler) GetAll(c *fiber.Ctx) error {
-// 	page, _ := strconv.Atoi(c.Query("page", "1"))
-// 	perPage, _ := strconv.Atoi(c.Query("per_page", "10"))
-// 	search := c.Query("search", "")
+func (h *PekerjaanHandler) GetAll(c *fiber.Ctx) error {
+	response, err := h.pekerjaanService.GetAll(c)
+	if err != nil {
+		return helper.ErrorResponse(c, fiber.StatusInternalServerError, err.Error())
+	}
 
-// 	pekerjaan, meta, err := h.pekerjaanService.GetAll(page, perPage, search)
-// 	if err != nil {
-// 		return helper.ErrorResponse(c, fiber.StatusInternalServerError, err.Error())
-// 	}
-
-// 	return helper.PaginatedSuccessResponse(c, "Pekerjaan retrieved successfully", pekerjaan, meta)
-// }
+	return c.Status(fiber.StatusOK).JSON(response)
+}
 
 func (h *PekerjaanHandler) GetByID(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
@@ -71,23 +68,6 @@ func (h *PekerjaanHandler) Create(c *fiber.Ctx) error {
 		return helper.ErrorResponse(c, fiber.StatusBadRequest, "Invalid request body")
 	}
 
-	// Parse tanggal from string if needed
-	if c.FormValue("tanggal_mulai_kerja") != "" {
-		if t, err := time.Parse("2006-01-02", c.FormValue("tanggal_mulai_kerja")); err == nil {
-			data.TanggalMulaiKerja = t
-		}
-	}
-	if c.FormValue("tanggal_selesai_kerja") != "" {
-		if t, err := time.Parse("2006-01-02", c.FormValue("tanggal_selesai_kerja")); err == nil {
-			data.TanggalSelesaiKerja = &t
-		}
-	}
-
-	// Basic validation
-	if data.AlumniID == 0 || data.NamaPerusahaan == "" || data.PosisiJabatan == "" {
-		return helper.ErrorResponse(c, fiber.StatusBadRequest, "Alumni ID, nama perusahaan, and posisi jabatan are required")
-	}
-
 	pekerjaan, err := h.pekerjaanService.Create(&data)
 	if err != nil {
 		status := fiber.StatusInternalServerError
@@ -111,23 +91,6 @@ func (h *PekerjaanHandler) Update(c *fiber.Ctx) error {
 	var data model.PekerjaanUpdate
 	if err := c.BodyParser(&data); err != nil {
 		return helper.ErrorResponse(c, fiber.StatusBadRequest, "Invalid request body")
-	}
-
-	// Parse tanggal from string if needed
-	if c.FormValue("tanggal_mulai_kerja") != "" {
-		if t, err := time.Parse("2006-01-02", c.FormValue("tanggal_mulai_kerja")); err == nil {
-			data.TanggalMulaiKerja = t
-		}
-	}
-	if c.FormValue("tanggal_selesai_kerja") != "" {
-		if t, err := time.Parse("2006-01-02", c.FormValue("tanggal_selesai_kerja")); err == nil {
-			data.TanggalSelesaiKerja = &t
-		}
-	}
-
-	// Basic validation
-	if data.NamaPerusahaan == "" || data.PosisiJabatan == "" {
-		return helper.ErrorResponse(c, fiber.StatusBadRequest, "Nama perusahaan and posisi jabatan are required")
 	}
 
 	pekerjaan, err := h.pekerjaanService.Update(id, &data)
@@ -160,13 +123,4 @@ func (h *PekerjaanHandler) Delete(c *fiber.Ctx) error {
 	}
 
 	return helper.SuccessResponse(c, "Pekerjaan deleted successfully", nil)
-}
-
-func (h *PekerjaanHandler) GetAll(c *fiber.Ctx) error {
-	response, err := h.pekerjaanService.GetAll(c)
-	if err != nil {
-		return helper.ErrorResponse(c, fiber.StatusInternalServerError, err.Error())
-	}
-
-	return c.Status(fiber.StatusOK).JSON(response)
 }

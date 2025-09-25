@@ -2,52 +2,54 @@ package route
 
 import (
 	"alumni-go/middleware"
+	"database/sql"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func RegisterRoutes(app *fiber.App) {
-	// Initialize handlers
-	authHandler := NewAuthHandler()
-	alumniHandler := NewAlumniHandler()
-	pekerjaanHandler := NewPekerjaanHandler()
+// SetupRoutes menerima db dan jwtSecret untuk di-inject ke lapisan bawah
+func SetupRoutes(app *fiber.App, db *sql.DB, jwtSecret string) {
+	// 1. Buat instance middleware dengan secret key
+	mw := middleware.NewMiddleware(jwtSecret)
 
-	// API group
+	// 2. Buat instance handlers dengan dependensi yang sesuai
+	authHandler := NewAuthHandler(db, jwtSecret)
+	alumniHandler := NewAlumniHandler(db)
+	pekerjaanHandler := NewPekerjaanHandler(db)
+
+	// Grup utama API
 	api := app.Group("/alumni-management-system")
 
-	// Auth routes (no middleware)
+	// Rute publik untuk login
 	api.Post("/login", authHandler.Login)
 
-	// Protected routes
-	protected := api.Use(middleware.JWTMiddleware())
+	// Grup untuk rute yang terproteksi, menggunakan method dari instance middleware
+	protected := api.Group("/", mw.JWTMiddleware())
 	
-	// Profile route (for both admin and user)
+	// Rute profil
 	protected.Get("/profile", middleware.AdminOrUser(), authHandler.Profile)
 
-	// Alumni routes
-	alumni := protected.Group("/alumni")
-	alumni.Get("/", middleware.AdminOrUser(), alumniHandler.GetAll)          // Admin + User
-	alumni.Get("/:id", middleware.AdminOrUser(), alumniHandler.GetByID)      // Admin + User
-	alumni.Post("/", middleware.AdminOnly(), alumniHandler.Create)           // Admin only
-	alumni.Put("/:id", middleware.AdminOnly(), alumniHandler.Update)         // Admin only
-	alumni.Delete("/:id", middleware.AdminOnly(), alumniHandler.Delete)      // Admin only
+	// Rute untuk Alumni
+	alumniRoutes := protected.Group("/alumni")
+	alumniRoutes.Get("/", middleware.AdminOrUser(), alumniHandler.GetAll)
+	alumniRoutes.Get("/:id", middleware.AdminOrUser(), alumniHandler.GetByID)
+	alumniRoutes.Get("/laporan/baru-bekerja", middleware.AdminOrUser(), alumniHandler.GetAlumniBaruBekerja)
+	alumniRoutes.Post("/", middleware.AdminOnly(), alumniHandler.Create)
+	alumniRoutes.Put("/:id", middleware.AdminOnly(), alumniHandler.Update)
+	alumniRoutes.Delete("/:id", middleware.AdminOnly(), alumniHandler.Delete)
 
-	alumni.Get("/laporan/baru-bekerja", middleware.AdminOrUser(), alumniHandler.GetAlumniBaruBekerja)
+	// Rute untuk Pekerjaan
+	pekerjaanRoutes := protected.Group("/pekerjaan")
+	pekerjaanRoutes.Get("/", middleware.AdminOrUser(), pekerjaanHandler.GetAll)
+	pekerjaanRoutes.Get("/:id", middleware.AdminOrUser(), pekerjaanHandler.GetByID)
+	pekerjaanRoutes.Get("/alumni/:alumni_id", middleware.AdminOnly(), pekerjaanHandler.GetByAlumniID)
+	pekerjaanRoutes.Post("/", middleware.AdminOnly(), pekerjaanHandler.Create)
+	pekerjaanRoutes.Put("/:id", middleware.AdminOnly(), pekerjaanHandler.Update)
+	pekerjaanRoutes.Delete("/:id", middleware.AdminOnly(), pekerjaanHandler.Delete)
 
-	// Pekerjaan routes
-	pekerjaan := protected.Group("/pekerjaan")
-	pekerjaan.Get("/", middleware.AdminOrUser(), pekerjaanHandler.GetAll)                    // Admin + User
-	pekerjaan.Get("/:id", middleware.AdminOrUser(), pekerjaanHandler.GetByID)                // Admin + User
-	pekerjaan.Get("/alumni/:alumni_id", middleware.AdminOnly(), pekerjaanHandler.GetByAlumniID) // Admin only
-	pekerjaan.Post("/", middleware.AdminOnly(), pekerjaanHandler.Create)                     // Admin only
-	pekerjaan.Put("/:id", middleware.AdminOnly(), pekerjaanHandler.Update)                   // Admin only
-	pekerjaan.Delete("/:id", middleware.AdminOnly(), pekerjaanHandler.Delete)                // Admin only
-
-	// Health check
+	// Rute Health Check
 	app.Get("/health", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"status": "OK",
-			"message": "Alumni Management System is running",
-		})
+		return c.JSON(fiber.Map{"status": "OK"})
 	})
 }
+

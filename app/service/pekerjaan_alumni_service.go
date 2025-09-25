@@ -12,42 +12,18 @@ import (
 )
 
 type PekerjaanAlumniService struct {
-	repo      *repository.PekerjaanAlumniRepository
+	repo       *repository.PekerjaanAlumniRepository
 	alumniRepo *repository.AlumniRepository
 }
 
-func NewPekerjaanAlumniService() *PekerjaanAlumniService {
+// Perubahan di sini: NewPekerjaanAlumniService sekarang menerima *sql.DB
+func NewPekerjaanAlumniService(db *sql.DB) *PekerjaanAlumniService {
 	return &PekerjaanAlumniService{
-		repo:      repository.NewPekerjaanAlumniRepository(),
-		alumniRepo: repository.NewAlumniRepository(),
+		// Teruskan 'db' saat membuat kedua repository
+		repo:       repository.NewPekerjaanAlumniRepository(db),
+		alumniRepo: repository.NewAlumniRepository(db),
 	}
 }
-
-// func (s *PekerjaanAlumniService) GetAll(page, perPage int, search string) ([]model.PekerjaanAlumniWithAlumni, model.MetaData, error) {
-// 	if page < 1 {
-// 		page = 1
-// 	}
-// 	if perPage < 1 {
-// 		perPage = 10
-// 	}
-// 	if perPage > 100 {
-// 		perPage = 100
-// 	}
-
-// 	pekerjaan, total, err := s.repo.GetAll(page, perPage, search)
-// 	if err != nil {
-// 		return nil, model.MetaData{}, err
-// 	}
-
-// 	meta := model.MetaData{
-// 		Page:       page,
-// 		PerPage:    perPage,
-// 		Total:      total,
-// 		TotalPages: (int(total) + perPage - 1) / perPage,
-// 	}
-
-// 	return pekerjaan, meta, nil
-// }
 
 func (s *PekerjaanAlumniService) GetByID(id int) (*model.PekerjaanAlumniWithAlumni, error) {
 	pekerjaan, err := s.repo.GetByID(id)
@@ -88,10 +64,8 @@ func (s *PekerjaanAlumniService) Create(data *model.PekerjaanCreate) (*model.Pek
 		return nil, errors.New("tanggal mulai kerja tidak boleh setelah tanggal selesai kerja")
 	}
 
-	// PERBAIKAN: Panggil fungsi Create dari repository
 	pekerjaan, err := s.repo.Create(data)
 	if err != nil {
-		// Jika ada error saat create, langsung kembalikan errornya
 		return nil, err
 	}
 
@@ -99,23 +73,18 @@ func (s *PekerjaanAlumniService) Create(data *model.PekerjaanCreate) (*model.Pek
 }
 
 func (s *PekerjaanAlumniService) Update(id int, data *model.PekerjaanUpdate) (*model.PekerjaanAlumni, error) {
-	// 1. Periksa dulu apakah data pekerjaan yang akan diupdate memang ada
 	_, err := s.repo.GetByID(id)
 	if err != nil {
-		// repo.GetByID sudah mengembalikan error jika tidak ditemukan, 
-		// tapi kita bisa bungkus dengan pesan yang lebih spesifik jika mau.
 		if err == sql.ErrNoRows {
 			return nil, errors.New("pekerjaan not found")
 		}
 		return nil, err
 	}
 
-	// 2. Validasi tanggal
 	if data.TanggalSelesaiKerja != nil && data.TanggalMulaiKerja.After(*data.TanggalSelesaiKerja) {
 		return nil, errors.New("tanggal mulai kerja tidak boleh setelah tanggal selesai kerja")
 	}
 
-	// 3. Panggil repository untuk melakukan update ke database
 	pekerjaan, err := s.repo.Update(id, data)
 	if err != nil {
 		return nil, err
@@ -125,7 +94,6 @@ func (s *PekerjaanAlumniService) Update(id int, data *model.PekerjaanUpdate) (*m
 }
 
 func (s *PekerjaanAlumniService) Delete(id int) error {
-	// Check if pekerjaan exists
 	_, err := s.GetByID(id)
 	if err != nil {
 		return err

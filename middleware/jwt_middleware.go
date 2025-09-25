@@ -7,15 +7,24 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func JWTMiddleware() fiber.Handler {
+// Struct untuk menampung dependensi middleware, seperti secret key
+type Middleware struct {
+	jwtSecret string
+}
+
+// Constructor untuk membuat instance Middleware
+func NewMiddleware(jwtSecret string) *Middleware {
+	return &Middleware{jwtSecret: jwtSecret}
+}
+
+// JWTMiddleware sekarang menjadi method dari struct Middleware
+func (m *Middleware) JWTMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Get Authorization header
 		auth := c.Get("Authorization")
 		if auth == "" {
 			return helper.ErrorResponse(c, fiber.StatusUnauthorized, "Missing authorization token")
 		}
 
-		// Check if it's a Bearer token
 		parts := strings.Split(auth, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			return helper.ErrorResponse(c, fiber.StatusUnauthorized, "Invalid authorization format")
@@ -23,13 +32,12 @@ func JWTMiddleware() fiber.Handler {
 
 		token := parts[1]
 
-		// Validate token
-		claims, err := helper.ValidateToken(token)
+		// Validasi token menggunakan secret key dari struct
+		claims, err := helper.ValidateToken(token, m.jwtSecret)
 		if err != nil {
 			return helper.ErrorResponse(c, fiber.StatusUnauthorized, "Invalid or expired token")
 		}
 
-		// Set user info in context
 		c.Locals("user_id", claims.UserID)
 		c.Locals("username", claims.Username)
 		c.Locals("role", claims.Role)

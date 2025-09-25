@@ -15,37 +15,13 @@ type AlumniService struct {
 	repo *repository.AlumniRepository
 }
 
-func NewAlumniService() *AlumniService {
+// Perubahan di sini: NewAlumniService sekarang menerima *sql.DB
+func NewAlumniService(db *sql.DB) *AlumniService {
 	return &AlumniService{
-		repo: repository.NewAlumniRepository(),
+		// Teruskan 'db' saat membuat repository
+		repo: repository.NewAlumniRepository(db),
 	}
 }
-
-// func (s *AlumniService) GetAll(page, perPage int, search string) ([]model.Alumni, model.MetaData, error) {
-// 	if page < 1 {
-// 		page = 1
-// 	}
-// 	if perPage < 1 {
-// 		perPage = 10
-// 	}
-// 	if perPage > 100 {
-// 		perPage = 100
-// 	}
-
-// 	alumni, total, err := s.repo.GetAll(page, perPage, search)
-// 	if err != nil {
-// 		return nil, model.MetaData{}, err
-// 	}
-
-// 	meta := model.MetaData{
-// 		Page:       page,
-// 		PerPage:    perPage,
-// 		Total:      total,
-// 		TotalPages: (int(total) + perPage - 1) / perPage,
-// 	}
-
-// 	return alumni, meta, nil
-// }
 
 func (s *AlumniService) GetByID(id int) (*model.Alumni, error) {
 	alumni, err := s.repo.GetByID(id)
@@ -140,14 +116,14 @@ func (s *AlumniService) GetAlumniBaruBekerja() ([]model.AlumniPekerjaanSingkat, 
 }
 
 func (s *AlumniService) GetAll(c *fiber.Ctx) (*model.PaginatedResponse, error) {
-	// 1. Ekstrak parameter dari query URL [cite: 200]
+	// 1. Ekstrak parameter dari query URL
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	perPage, _ := strconv.Atoi(c.Query("per_page", "10"))
 	search := c.Query("search", "")
 	sortBy := c.Query("sortBy", "id")
 	order := c.Query("order", "asc")
 
-	// 2. Validasi input untuk keamanan (mencegah SQL Injection) [cite: 158]
+	// 2. Validasi input untuk keamanan (mencegah SQL Injection)
 	sortByWhitelist := map[string]bool{"id": true, "nama": true, "nim": true, "angkatan": true, "tahun_lulus": true}
 	if !sortByWhitelist[sortBy] {
 		sortBy = "id" // default sort
@@ -167,7 +143,7 @@ func (s *AlumniService) GetAll(c *fiber.Ctx) (*model.PaginatedResponse, error) {
 		return nil, err
 	}
 
-	// 4. Buat response dengan data dan metadata [cite: 178]
+	// 4. Buat response dengan data dan metadata
 	totalPages := (total + int64(perPage) - 1) / int64(perPage)
 	meta := model.MetaData{
 		Page:       page,

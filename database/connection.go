@@ -9,9 +9,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-var DB *sql.DB
-
-func Connect() {
+func Connect() *sql.DB {
 	host := config.GetEnv("DB_HOST", "localhost")
 	port := config.GetEnv("DB_PORT", "5432")
 	user := config.GetEnv("DB_USER", "postgres")
@@ -22,15 +20,15 @@ func Connect() {
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		host, port, user, password, dbname, sslmode)
 
-	var err error
-	DB, err = sql.Open("postgres", dsn)
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
 
-	if err = DB.Ping(); err != nil {
+	if err = db.Ping(); err != nil {
 		log.Fatal("Failed to ping database:", err)
 	}
 
 	log.Println("Successfully connected to database")
+	return db
 }
