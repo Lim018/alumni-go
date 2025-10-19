@@ -28,7 +28,7 @@ func LoginService(db *sql.DB, req model.LoginRequest) (*model.LoginResponse, err
 	}
 
 	return &model.LoginResponse{
-		User:  *user,
+		User:  user.ToUserResponse(),
 		Token: token,
 	}, nil
 }
@@ -46,7 +46,6 @@ func GetUsersService(db *sql.DB) fiber.Handler {
 			"id":         "id",
 			"username":   "username",
 			"email":      "email",
-			"password_hash": "password_hash",
 			"role":       "role",
 			"created_at": "created_at",
 		}
@@ -75,8 +74,14 @@ func GetUsersService(db *sql.DB) fiber.Handler {
 			pages = (total + limit - 1) / limit
 		}
 
-		response := model.UserResponse{
-			Data: users,
+		// Convert to response models
+		responses := make([]model.UserResponse, len(users))
+		for i, user := range users {
+			responses[i] = user.ToUserResponse()
+		}
+
+		response := model.UserListResponse{
+			Data: responses,
 			Meta: model.MetaInfo{
 				Page:   page,
 				Limit:  limit,

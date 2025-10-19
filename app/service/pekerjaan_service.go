@@ -28,21 +28,40 @@ func GetPekerjaanByAlumniIDService(c *fiber.Ctx, db *sql.DB) error {
 		})
 	}
 
+	// Convert to response models
+	responses := make([]model.PekerjaanResponse, len(pekerjaanList))
+	for i, pekerjaan := range pekerjaanList {
+		responses[i] = pekerjaan.ToPekerjaanResponse()
+	}
+
 	return c.JSON(fiber.Map{
 		"message": "Berhasil mendapatkan data pekerjaan untuk alumni",
 		"success": true,
-		"data":    pekerjaanList,
+		"data":    responses,
 	})
 }
 
-// CREATE PEKERJAAN
 func CreatePekerjaanService(c *fiber.Ctx, db *sql.DB) error {
-	var pekerjaan model.Pekerjaan
-	if err := c.BodyParser(&pekerjaan); err != nil {
+	var req model.CreatePekerjaanRequest
+	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{
 			"message": "Input tidak valid: " + err.Error(),
 			"success": false,
 		})
+	}
+
+	// Convert request to database model
+	pekerjaan := model.Pekerjaan{
+		AlumniID:            req.AlumniID,
+		NamaPerusahaan:      req.NamaPerusahaan,
+		PosisiJabatan:       req.PosisiJabatan,
+		BidangIndustri:      req.BidangIndustri,
+		LokasiKerja:         req.LokasiKerja,
+		GajiRange:           req.GajiRange,
+		TanggalMulaiKerja:   req.TanggalMulaiKerja,
+		TanggalSelesaiKerja: req.TanggalSelesaiKerja,
+		StatusPekerjaan:     req.StatusPekerjaan,
+		DeskripsiPekerjaan:  req.DeskripsiPekerjaan,
 	}
 
 	newPekerjaan, err := repository.CreatePekerjaan(db, pekerjaan)
@@ -56,7 +75,7 @@ func CreatePekerjaanService(c *fiber.Ctx, db *sql.DB) error {
 	return c.Status(201).JSON(fiber.Map{
 		"message": "Pekerjaan berhasil ditambahkan",
 		"success": true,
-		"data":    newPekerjaan,
+		"data":    newPekerjaan.ToPekerjaanResponse(),
 	})
 }
 
@@ -69,12 +88,26 @@ func UpdatePekerjaanService(c *fiber.Ctx, db *sql.DB) error {
 		})
 	}
 
-	var pekerjaan model.Pekerjaan
-	if err := c.BodyParser(&pekerjaan); err != nil {
+	var req model.UpdatePekerjaanRequest
+	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{
 			"message": "Input tidak valid: " + err.Error(),
 			"success": false,
 		})
+	}
+
+	// Convert request to database model
+	pekerjaan := model.Pekerjaan{
+		AlumniID:            req.AlumniID,
+		NamaPerusahaan:      req.NamaPerusahaan,
+		PosisiJabatan:       req.PosisiJabatan,
+		BidangIndustri:      req.BidangIndustri,
+		LokasiKerja:         req.LokasiKerja,
+		GajiRange:           req.GajiRange,
+		TanggalMulaiKerja:   req.TanggalMulaiKerja,
+		TanggalSelesaiKerja: req.TanggalSelesaiKerja,
+		StatusPekerjaan:     req.StatusPekerjaan,
+		DeskripsiPekerjaan:  req.DeskripsiPekerjaan,
 	}
 
 	updatedPekerjaan, err := repository.UpdatePekerjaan(db, id, pekerjaan)
@@ -88,7 +121,7 @@ func UpdatePekerjaanService(c *fiber.Ctx, db *sql.DB) error {
 	return c.JSON(fiber.Map{
 		"message": "Pekerjaan berhasil diupdate",
 		"success": true,
-		"data":    updatedPekerjaan,
+		"data":    updatedPekerjaan.ToPekerjaanResponse(),
 	})
 }
 
@@ -142,6 +175,12 @@ func GetAllPekerjaanServiceDatatable(c *fiber.Ctx, db *sql.DB) error {
 		})
 	}
 
+	// Convert to response models
+	responses := make([]model.PekerjaanResponse, len(list))
+	for i, pekerjaan := range list {
+		responses[i] = pekerjaan.ToPekerjaanResponse()
+	}
+
 	meta := model.MetaInfo{
 		Page:   page,
 		Limit:  limit,
@@ -155,7 +194,7 @@ func GetAllPekerjaanServiceDatatable(c *fiber.Ctx, db *sql.DB) error {
 	return c.JSON(fiber.Map{
 		"message": "Berhasil mendapatkan data pekerjaan alumni",
 		"success": true,
-		"data":    list,
+		"data":    responses,
 		"meta":    meta,
 	})
 }
@@ -226,6 +265,12 @@ func GetTrashPekerjaanService(c *fiber.Ctx, db *sql.DB) error {
 		})
 	}
 
+	// Convert to trash response models
+	responses := make([]model.PekerjaanTrashResponse, len(list))
+	for i, pekerjaan := range list {
+		responses[i] = pekerjaan.ToPekerjaanTrashResponse()
+	}
+
 	meta := model.MetaInfo{
 		Page:   page,
 		Limit:  limit,
@@ -239,7 +284,7 @@ func GetTrashPekerjaanService(c *fiber.Ctx, db *sql.DB) error {
 	return c.JSON(fiber.Map{
 		"message": "Berhasil mendapatkan data trash",
 		"success": true,
-		"data":    list,
+		"data":    responses,
 		"meta":    meta,
 	})
 }

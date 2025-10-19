@@ -41,9 +41,7 @@ func DeleteAlumni(db *sql.DB, id int) error {
     return err
 }
 
-//datatable
 func GetAlumniRepo(db *sql.DB, search, sortBy, order string, limit, offset int) ([]model.Alumni, error) {
-	// default columns to prevent SQL injection
 	allowedSort := map[string]bool{"id": true, "nama": true, "angkatan": true, "tahun_lulus": true}
 	if !allowedSort[sortBy] {
 		sortBy = "id"
@@ -94,31 +92,27 @@ func CountAlumniRepo(db *sql.DB, search string) (int, error) {
 	return total, nil
 }
 
-func GetAlumniStatsByJurusan(db *sql.DB) ([]map[string]interface{}, error) {
-    query := `
+func GetAlumniStatsByJurusan(db *sql.DB) ([]model.AlumniStatsByJurusanResponse, error) {
+	query := `
         SELECT jurusan, COUNT(*) as total 
         FROM alumni 
         GROUP BY jurusan 
         ORDER BY total DESC
     `
-    
-    rows, err := db.Query(query)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-    
-    var stats []map[string]interface{}
-    for rows.Next() {
-        var jurusan string
-        var total int
-        if err := rows.Scan(&jurusan, &total); err != nil {
-            return nil, err
-        }
-        stats = append(stats, map[string]interface{}{
-            "jurusan": jurusan,
-            "total":   total,
-        })
-    }
-    return stats, nil
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stats []model.AlumniStatsByJurusanResponse
+	for rows.Next() {
+		var stat model.AlumniStatsByJurusanResponse
+		if err := rows.Scan(&stat.Jurusan, &stat.Total); err != nil {
+			return nil, err
+		}
+		stats = append(stats, stat)
+	}
+	return stats, nil
 }

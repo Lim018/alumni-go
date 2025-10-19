@@ -11,12 +11,24 @@ import (
 )
 
 func CreateAlumniService(c *fiber.Ctx, db *sql.DB) error {
-	var alumni model.Alumni
-	if err := c.BodyParser(&alumni); err != nil {
+	var req model.CreateAlumniRequest
+	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{
 			"message": "Input tidak valid: " + err.Error(),
 			"success": false,
 		})
+	}
+
+	// Convert request to database model
+	alumni := model.Alumni{
+		NIM:        req.NIM,
+		Nama:       req.Nama,
+		Jurusan:    req.Jurusan,
+		Angkatan:   req.Angkatan,
+		TahunLulus: req.TahunLulus,
+		Email:      req.Email,
+		NoTelepon:  req.NoTelepon,
+		Alamat:     req.Alamat,
 	}
 
 	newAlumni, err := repository.CreateAlumni(db, alumni)
@@ -30,7 +42,7 @@ func CreateAlumniService(c *fiber.Ctx, db *sql.DB) error {
 	return c.Status(201).JSON(fiber.Map{
 		"message": "Alumni berhasil ditambahkan",
 		"success": true,
-		"data":    newAlumni,
+		"data":    newAlumni.ToAlumniResponse(),
 	})
 }
 
@@ -43,12 +55,24 @@ func UpdateAlumniService(c *fiber.Ctx, db *sql.DB) error {
 		})
 	}
 
-	var alumni model.Alumni
-	if err := c.BodyParser(&alumni); err != nil {
+	var req model.UpdateAlumniRequest
+	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{
 			"message": "Input tidak valid: " + err.Error(),
 			"success": false,
 		})
+	}
+
+	// Convert request to database model
+	alumni := model.Alumni{
+		NIM:        req.NIM,
+		Nama:       req.Nama,
+		Jurusan:    req.Jurusan,
+		Angkatan:   req.Angkatan,
+		TahunLulus: req.TahunLulus,
+		Email:      req.Email,
+		NoTelepon:  req.NoTelepon,
+		Alamat:     req.Alamat,
 	}
 
 	updatedAlumni, err := repository.UpdateAlumni(db, id, alumni)
@@ -62,7 +86,7 @@ func UpdateAlumniService(c *fiber.Ctx, db *sql.DB) error {
 	return c.JSON(fiber.Map{
 		"message": "Alumni berhasil diupdate",
 		"success": true,
-		"data":    updatedAlumni,
+		"data":    updatedAlumni.ToAlumniResponse(),
 	})
 }
 
@@ -116,6 +140,12 @@ func GetAllAlumniServiceDatatable(c *fiber.Ctx, db *sql.DB) error {
 		})
 	}
 
+	// Convert to response models
+	responses := make([]model.AlumniResponse, len(alumniList))
+	for i, alumni := range alumniList {
+		responses[i] = alumni.ToAlumniResponse()
+	}
+
 	meta := model.MetaInfo{
 		Page:   page,
 		Limit:  limit,
@@ -129,23 +159,23 @@ func GetAllAlumniServiceDatatable(c *fiber.Ctx, db *sql.DB) error {
 	return c.JSON(fiber.Map{
 		"message": "Berhasil mendapatkan data alumni",
 		"success": true,
-		"data":    alumniList,
+		"data":    responses,
 		"meta":    meta,
 	})
 }
 
 func GetAlumniStatsService(c *fiber.Ctx, db *sql.DB) error {
-    stats, err := repository.GetAlumniStatsByJurusan(db)
-    if err != nil {
-        return c.Status(500).JSON(fiber.Map{
-            "message": "Gagal mendapatkan statistik: " + err.Error(),
-            "success": false,
-        })
-    }
-    
-    return c.JSON(fiber.Map{
-        "message": "Berhasil mendapatkan statistik alumni",
-        "success": true,
-        "data":    stats,
-    })
+	stats, err := repository.GetAlumniStatsByJurusan(db)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"message": "Gagal mendapatkan statistik: " + err.Error(),
+			"success": false,
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Berhasil mendapatkan statistik alumni",
+		"success": true,
+		"data":    stats,
+	})
 }
