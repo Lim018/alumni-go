@@ -1,14 +1,13 @@
 package routes
 
 import (
-	"database/sql"
-
-	"github.com/gofiber/fiber/v2"
+    "go.mongodb.org/mongo-driver/mongo"
+    "github.com/gofiber/fiber/v2"
 )
 
-func RegisterRoutes(app *fiber.App, db *sql.DB) {
-	AlumniRoutes(app, db)
-	PekerjaanRoutes(app, db)
-	AuthRoutes(app, db) 
-	UserRoutes(app, db)
+func RegisterRoutes(app *fiber.App, db *mongo.Database) {
+    AlumniRoutes(app, db)
+    PekerjaanRoutes(app, db)
+    AuthRoutes(app, db) 
+    UserRoutes(app, db)
 }

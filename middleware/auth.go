@@ -1,52 +1,68 @@
 package middleware
 
 import (
-	"os"
-	"strings"
-
-	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v5"
+    "strings"
+    
+    "go-fiber/utils"
+    
+    "github.com/gofiber/fiber/v2"
+    "go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func AuthRequired() fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		authHeader := c.Get("Authorization")
-		if authHeader == "" || !strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Token tidak ditemukan",
-			})
-		}
+    return func(c *fiber.Ctx) error {
+        authHeader := c.Get("Authorization")
+        if authHeader == "" {
+            return c.Status(401).JSON(fiber.Map{
+                "error":   "Missing authorization header",
+                "success": false,
+            })
+        }
 
-		tokenStr := strings.TrimSpace(authHeader[len("Bearer "):])
+        // Extract token from "Bearer <token>"
+        tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+        if tokenString == authHeader {
+            return c.Status(401).JSON(fiber.Map{
+                "error":   "Invalid authorization format",
+                "success": false,
+            })
+        }
 
-		secret := os.Getenv("JWT_SECRET")
+        claims, err := utils.ParseToken(tokenString)
+        if err != nil {
+            return c.Status(401).JSON(fiber.Map{
+                "error":   "Invalid or expired token",
+                "success": false,
+            })
+        }
 
-		token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-			return []byte(secret), nil
-		})
-		if err != nil || !token.Valid {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Token tidak valid",
-			})
-		}
+        // Convert string UserID to ObjectID
+        userID, err := primitive.ObjectIDFromHex(claims.UserID)
+        if err != nil {
+            return c.Status(401).JSON(fiber.Map{
+                "error":   "Invalid user ID in token",
+                "success": false,
+            })
+        }
 
-		claims := token.Claims.(jwt.MapClaims)
-		c.Locals("user_id", int(claims["user_id"].(float64)))
-		c.Locals("username", claims["username"].(string))
-		c.Locals("role", claims["role"].(string))
+        // Store user info in context
+        c.Locals("user_id", userID)
+        c.Locals("username", claims.Username)
+        c.Locals("role", claims.Role)
 
-		return c.Next()
-	}
+        return c.Next()
+    }
 }
 
 func AdminOnly() fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		role := c.Locals("role").(string)
-		if role != "admin" {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-				"error": "Akses ditolak. Hanya admin yang bisa mengakses",
-			})
-		}
-		return c.Next()
-	}
+    return func(c *fiber.Ctx) error {
+        role := c.Locals("role")
+        if role == nil || role.(string) != "admin" {
+            return c.Status(403).JSON(fiber.Map{
+                "error":   "Access denied. Admin only.",
+                "success": false,
+            })
+        }
+        return c.Next()
+    }
 }

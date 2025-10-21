@@ -1,18 +1,28 @@
 package config
 
 import (
-    "database/sql"
-
     "github.com/gofiber/fiber/v2"
-    "go-fiber/middleware"
-    "go-fiber/routes"
+    "github.com/gofiber/fiber/v2/middleware/cors"
+    "github.com/gofiber/fiber/v2/middleware/logger"
+    "go.mongodb.org/mongo-driver/mongo"
 )
 
-func NewApp(db *sql.DB) *fiber.App {
-    app := fiber.New()
-    app.Use(middleware.LoggerMiddleware)
+func NewApp(db *mongo.Database) *fiber.App {
+    app := fiber.New(fiber.Config{
+        ErrorHandler: func(c *fiber.Ctx, err error) error {
+            code := fiber.StatusInternalServerError
+            if e, ok := err.(*fiber.Error); ok {
+                code = e.Code
+            }
+            return c.Status(code).JSON(fiber.Map{
+                "error":   err.Error(),
+                "success": false,
+            })
+        },
+    })
 
-    routes.RegisterRoutes(app, db)
+    app.Use(logger.New())
+    app.Use(cors.New())
 
     return app
 }

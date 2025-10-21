@@ -4,13 +4,13 @@ package model
 
 // MetaInfo - Pagination and filtering metadata
 type MetaInfo struct {
-	Page   int    `json:"page"`
-	Limit  int    `json:"limit"`
-	Total  int    `json:"total"`
-	Pages  int    `json:"pages"`
-	SortBy string `json:"sortBy"`
-	Order  string `json:"order"`
-	Search string `json:"search"`
+    Page   int    `json:"page"`
+    Limit  int    `json:"limit"`
+    Total  int    `json:"total"`
+    Pages  int    `json:"pages"`
+    SortBy string `json:"sort_by"`
+    Order  string `json:"order"`
+    Search string `json:"search"`
 }
 
 // DatatableRequest - Generic request for datatable endpoints

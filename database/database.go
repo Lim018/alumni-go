@@ -1,23 +1,39 @@
 package database
 
 import (
-    "database/sql"
+    "context"
     "log"
     "os"
-    _ "github.com/lib/pq"
+    "time"
+    
+    "go.mongodb.org/mongo-driver/mongo"
+    "go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func ConnectDB() *sql.DB {
-    dsn := os.Getenv("DB_DSN")
-    db, err := sql.Open("postgres", dsn)
+var DB *mongo.Database
+
+func ConnectDB() *mongo.Database {
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+    mongoURI := os.Getenv("MONGODB_URI")
+    dbName := os.Getenv("MONGODB_DATABASE")
+    
+    client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
     if err != nil {
-        log.Fatal(err)
+        log.Fatal("Failed to connect to MongoDB:", err)
     }
 
-    if err = db.Ping(); err != nil {
+    // Ping database
+    if err = client.Ping(ctx, nil); err != nil {
         log.Fatal("Database tidak connect:", err)
     }
 
     log.Println("DB Connected ✅")
-    return db
+    DB = client.Database(dbName)
+    return DB
+}
+
+func GetCollection(collectionName string) *mongo.Collection {
+    return DB.Collection(collectionName)
 }
