@@ -19,10 +19,19 @@ func NewApp(db *mongo.Database) *fiber.App {
                 "success": false,
             })
         },
+        BodyLimit: 2 * 1024 * 1024, // 2MB max body size (for sertifikat)
     })
 
     app.Use(logger.New())
-    app.Use(cors.New())
+    app.Use(cors.New(cors.Config{
+        AllowOrigins: "*",
+        AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
+        AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+    }))
+
+    // Serve static files
+    app.Static("/uploads/foto", "./uploads/foto")
+    app.Static("/uploads/sertifikat", "./uploads/sertifikat")
 
     return app
 }

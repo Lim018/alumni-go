@@ -184,6 +184,21 @@ func (r *AlumniRepository) GetAlumniStatsByJurusan() ([]model.AlumniStatsByJurus
     return stats, nil
 }
 
+func (r *AlumniRepository) GetAlumniByUserID(userID primitive.ObjectID) (*model.Alumni, error) {
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+    collection := r.DB.Collection(alumniCollection)
+    
+    var alumni model.Alumni
+    err := collection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&alumni)
+    if err != nil {
+        return nil, err
+    }
+
+    return &alumni, nil
+}
+
 // Legacy functions for compatibility (will be deprecated)
 func CreateAlumni(db *mongo.Database, alumni model.Alumni) (*model.Alumni, error) {
     repo := NewAlumniRepository(db)
@@ -213,4 +228,9 @@ func CountAlumniRepo(db *mongo.Database, search string) (int, error) {
 func GetAlumniStatsByJurusan(db *mongo.Database) ([]model.AlumniStatsByJurusanResponse, error) {
     repo := NewAlumniRepository(db)
     return repo.GetAlumniStatsByJurusan()
+}
+
+func GetAlumniByUserID(db *mongo.Database, userID primitive.ObjectID) (*model.Alumni, error) {
+    repo := NewAlumniRepository(db)
+    return repo.GetAlumniByUserID(userID)
 }

@@ -16,6 +16,7 @@ const (
     AlumniCollection     = "alumni"
     PekerjaanCollection  = "pekerjaan_alumni"
     MigrationsCollection = "migrations"
+    FilesCollection      = "files"
 )
 
 // Migration represents a database migration
@@ -41,6 +42,7 @@ func RunMigrations(db *mongo.Database) error {
         {"create_users_collection", createUsersCollection},
         {"create_alumni_collection", createAlumniCollection},
         {"create_pekerjaan_collection", createPekerjaanCollection},
+        {"create_files_collection", createFilesCollection},
         {"create_indexes", createAllIndexes},
     }
 
@@ -265,6 +267,60 @@ func createPekerjaanCollection(db *mongo.Database) error {
     return db.CreateCollection(ctx, PekerjaanCollection, opts)
 }
 
+func createFilesCollection(db *mongo.Database) error {
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+    validator := bson.M{
+        "$jsonSchema": bson.M{
+            "bsonType": "object",
+            "required": []string{"file_name", "original_name", "file_path", "file_size", "file_type", "file_category", "alumni_id", "uploaded_at"},
+            "properties": bson.M{
+                "file_name": bson.M{
+                    "bsonType":    "string",
+                    "description": "must be a string and is required",
+                },
+                "original_name": bson.M{
+                    "bsonType":    "string",
+                    "description": "must be a string and is required",
+                },
+                "file_path": bson.M{
+                    "bsonType":    "string",
+                    "description": "must be a string and is required",
+                },
+                "file_size": bson.M{
+                    "bsonType":    "long",
+                    "description": "must be a long and is required",
+                },
+                "file_type": bson.M{
+                    "bsonType":    "string",
+                    "description": "must be a string and is required",
+                },
+                "file_category": bson.M{
+                    "bsonType":    "string",
+                    "description": "must be 'foto' or 'sertifikat'",
+                    "enum":        []string{"foto", "sertifikat"},
+                },
+                "alumni_id": bson.M{
+                    "bsonType":    "objectId",
+                    "description": "must be an objectId and is required",
+                },
+                "uploaded_by": bson.M{
+                    "bsonType":    []string{"objectId", "null"},
+                    "description": "must be an objectId or null",
+                },
+                "uploaded_at": bson.M{
+                    "bsonType":    "date",
+                    "description": "must be a date and is required",
+                },
+            },
+        },
+    }
+
+    opts := options.CreateCollection().SetValidator(validator)
+    return db.CreateCollection(ctx, FilesCollection, opts)
+}
+
 // createAllIndexes creates all necessary indexes
 func createAllIndexes(db *mongo.Database) error {
     ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -391,6 +447,52 @@ func createAllIndexes(db *mongo.Database) error {
     }
     log.Println("  ✓ Pekerjaan indexes created")
 
+    // Files indexes
+    fileCollection := db.Collection(FilesCollection)
+    fileIndexes := []mongo.IndexModel{
+        {
+            Keys:    bson.D{{Key: "file_name", Value: 1}},
+            Options: options.Index().SetUnique(true).SetName("idx_file_name"),
+        },
+        {
+            Keys:    bson.D{{Key: "original_name", Value: 1}},
+            Options: options.Index().SetName("idx_original_name"),
+        },
+        {
+            Keys:    bson.D{{Key: "file_type", Value: 1}},
+            Options: options.Index().SetName("idx_file_type"),
+        },
+        {
+            Keys:    bson.D{{Key: "file_category", Value: 1}},
+            Options: options.Index().SetName("idx_file_category"),
+        },
+        {
+            Keys:    bson.D{{Key: "alumni_id", Value: 1}},
+            Options: options.Index().SetName("idx_alumni_id"),
+        },
+        {
+            Keys:    bson.D{{Key: "uploaded_by", Value: 1}},
+            Options: options.Index().SetName("idx_uploaded_by"),
+        },
+        {
+            Keys:    bson.D{{Key: "uploaded_at", Value: -1}},
+            Options: options.Index().SetName("idx_uploaded_at"),
+        },
+        {
+            Keys: bson.D{
+                {Key: "alumni_id", Value: 1},
+                {Key: "file_category", Value: 1},
+            },
+            Options: options.Index().SetName("idx_alumni_category"),
+        },
+    }
+
+    _, err = fileCollection.Indexes().CreateMany(ctx, fileIndexes)
+    if err != nil {
+        return err
+    }
+    log.Println("  ✓ Files indexes created")
+
     return nil
 }
 
@@ -404,6 +506,7 @@ func DropAllCollections(db *mongo.Database) error {
         AlumniCollection,
         PekerjaanCollection,
         MigrationsCollection,
+        FilesCollection,
     }
 
     for _, coll := range collections {

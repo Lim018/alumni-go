@@ -97,5 +97,3 @@ type PekerjaanTrashListResponse struct {
     Data []PekerjaanTrashResponse `json:"data"`
     Meta MetaInfo                 `json:"meta"`
 }
-
-// MetaInfo for pagination

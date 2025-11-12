@@ -10,4 +10,5 @@ func RegisterRoutes(app *fiber.App, db *mongo.Database) {
     PekerjaanRoutes(app, db)
     AuthRoutes(app, db) 
     UserRoutes(app, db)
+    FileRoutes(app, db)
 }

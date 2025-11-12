@@ -38,3 +38,13 @@ build/
 
 # Temporary files
 tmp/
+
+# Uploads folder (don't commit uploaded files)
+uploads/foto/*
+!uploads/foto/.gitkeep
+
+uploads/sertifikat/*
+!uploads/sertifikat/.gitkeep
+
+# Keep folder structure
+!uploads/.gitkeep

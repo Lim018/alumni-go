@@ -1,4 +1,3 @@
-// auth_route.go
 package routes
 
 import (
