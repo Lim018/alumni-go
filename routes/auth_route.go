@@ -11,6 +11,17 @@ import (
 func AuthRoutes(app *fiber.App, db *mongo.Database) {
     auth := app.Group("/auth")
 
+    // Login godoc
+    // @Summary User login
+    // @Description Authenticate user and return JWT token
+    // @Tags Authentication
+    // @Accept json
+    // @Produce json
+    // @Param body body model.LoginRequest true "Login credentials"
+    // @Success 200 {object} map[string]interface{} "Login successful"
+    // @Failure 400 {object} map[string]interface{} "Invalid request"
+    // @Failure 401 {object} map[string]interface{} "Unauthorized"
+    // @Router /auth/login [post]
     auth.Post("/login", func(c *fiber.Ctx) error {
         var req model.LoginRequest
         if err := c.BodyParser(&req); err != nil {

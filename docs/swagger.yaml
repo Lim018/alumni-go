@@ -1,0 +1,257 @@
+basePath: /
+definitions:
+  model.CreateAlumniRequest:
+    properties:
+      alamat:
+        type: string
+      angkatan:
+        type: integer
+      email:
+        type: string
+      jurusan:
+        type: string
+      nama:
+        type: string
+      nim:
+        type: string
+      no_telepon:
+        type: string
+      tahun_lulus:
+        type: integer
+      user_id:
+        type: string
+    required:
+    - angkatan
+    - email
+    - jurusan
+    - nama
+    - nim
+    - no_telepon
+    - tahun_lulus
+    type: object
+  model.UpdateAlumniRequest:
+    properties:
+      alamat:
+        type: string
+      angkatan:
+        type: integer
+      email:
+        type: string
+      jurusan:
+        type: string
+      nama:
+        type: string
+      nim:
+        type: string
+      no_telepon:
+        type: string
+      tahun_lulus:
+        type: integer
+    required:
+    - angkatan
+    - email
+    - jurusan
+    - nama
+    - nim
+    - no_telepon
+    - tahun_lulus
+    type: object
+host: localhost:3000
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: API untuk manajemen data alumni, pekerjaan, dan file
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Alumni Management API
+  version: "1.0"
+paths:
+  /alumni:
+    get:
+      consumes:
+      - application/json
+      description: Get list of all alumni with pagination, sorting, and search
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Limit per page
+        in: query
+        name: limit
+        type: integer
+      - default: _id
+        description: Sort by field
+        in: query
+        name: sortBy
+        type: string
+      - default: asc
+        description: Sort order (asc/desc)
+        in: query
+        name: order
+        type: string
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of alumni
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all alumni with pagination
+      tags:
+      - Alumni
+    post:
+      consumes:
+      - application/json
+      description: Create a new alumni record
+      parameters:
+      - description: Alumni data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateAlumniRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Alumni created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid input
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create new alumni
+      tags:
+      - Alumni
+  /alumni/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an alumni record
+      parameters:
+      - description: Alumni ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Alumni deleted successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid ID
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete alumni
+      tags:
+      - Alumni
+    put:
+      consumes:
+      - application/json
+      description: Update an existing alumni record
+      parameters:
+      - description: Alumni ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Alumni data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateAlumniRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Alumni updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid input
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update alumni
+      tags:
+      - Alumni
+  /alumni/stats/jurusan:
+    get:
+      consumes:
+      - application/json
+      description: Get alumni statistics grouped by jurusan
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Alumni statistics
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get alumni statistics
+      tags:
+      - Alumni
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

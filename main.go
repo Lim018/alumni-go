@@ -8,7 +8,31 @@ import (
     "go-fiber/config"
     "go-fiber/database"
     "go-fiber/routes"
+    
+    _ "go-fiber/docs"
+    
+    fiberSwagger "github.com/swaggo/fiber-swagger"
 )
+
+// @title Alumni Management API
+// @version 1.0
+// @description API untuk manajemen data alumni, pekerjaan, dan file
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:3000
+// @BasePath /
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 
 func main() {
     // Command line flags
@@ -74,6 +98,9 @@ func main() {
     // Create Fiber app
     app := config.NewApp(db)
 
+    // Swagger route
+    app.Get("/swagger/*", fiberSwagger.WrapHandler)
+
     // Register routes
     routes.RegisterRoutes(app, db)
 
@@ -84,5 +111,6 @@ func main() {
     }
 
     log.Printf("🌐 Server running on http://localhost:%s", port)
+    log.Printf("📚 Swagger UI: http://localhost:%s/swagger/index.html", port)
     log.Fatal(app.Listen(":" + port))
 }
